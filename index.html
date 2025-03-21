@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片标注工具</title>
+    <!-- 引入Arco Design样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/@arco-design/web-react/dist/css/arco.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/@arco-design/icon-font/css/arco-icon.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <div class="app-header">
+            <div class="logo">
+                <i class="arco-icon arco-icon-image"></i>
+                <h1>图片标注工具</h1>
+            </div>
+            <div class="header-actions">
+                <button class="arco-btn arco-btn-primary arco-btn-icon-only" title="帮助">
+                    <i class="arco-icon arco-icon-question-circle"></i>
+                </button>
+                <button class="arco-btn arco-btn-secondary" onclick="openSettings()">
+                    <i class="arco-icon arco-icon-settings"></i>
+                    <span>设置</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="app-content">
+            <!-- 左侧：图片上传、画布和控制区 -->
+            <div class="left-panel">
+                <div class="arco-card upload-section">
+                    <div class="arco-card-header">
+                        <div class="arco-card-header-title">
+                            <i class="arco-icon arco-icon-upload"></i>
+                            <span>上传图片</span>
+                        </div>
+                    </div>
+                    <div class="arco-card-body">
+                        <div class="upload-area">
+                            <input type="file" id="imageUpload" accept="image/*" hidden>
+                            <div class="upload-trigger">
+                                <i class="arco-icon arco-icon-upload"></i>
+                                <p>点击或拖拽图片至此处</p>
+                                <button class="arco-btn arco-btn-secondary arco-btn-size-small">选择文件</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="arco-card resolution-section">
+                    <div class="arco-card-header">
+                        <div class="arco-card-header-title">
+                            <i class="arco-icon arco-icon-fullscreen"></i>
+                            <span>分辨率设置</span>
+                        </div>
+                    </div>
+                    <div class="arco-card-body">
+                        <div class="resolution-info">
+                            <div id="originalResolution" class="info-item" style="display: none;">
+                                <span class="label">原始尺寸:</span>
+                                <span class="value">0 × 0</span>
+                            </div>
+                            <div id="suggestedResolution" class="info-item highlight" style="display: none;">
+                                <span class="label">已应用尺寸:</span>
+                                <span class="value">0 × 0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="resolution-options">
+                            <div class="arco-radio-group">
+                                <div class="arco-radio">
+                                    <input type="radio" id="res1280" name="resolution" value="1280">
+                                    <label for="res1280">1280 × 720</label>
+                                </div>
+                                <div class="arco-radio">
+                                    <input type="radio" id="res1440" name="resolution" value="1440">
+                                    <label for="res1440">1440 × 900</label>
+                                </div>
+                                <div class="arco-radio">
+                                    <input type="radio" id="res1920" name="resolution" value="1920">
+                                    <label for="res1920">1920 × 1080</label>
+                                </div>
+                                <div class="arco-radio custom-resolution">
+                                    <input type="radio" id="resCustom" name="resolution" value="custom">
+                                    <label for="resCustom">自定义</label>
+                                    <div class="arco-input-group">
+                                        <input type="number" id="customWidth" class="arco-input" min="800" placeholder="宽度" disabled>
+                                        <span class="separator">×</span>
+                                        <input type="number" id="customHeight" class="arco-input" min="600" placeholder="高度" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button id="applyResolution" class="arco-btn arco-btn-primary">
+                            <i class="arco-icon arco-icon-check"></i>
+                            <span>应用分辨率</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="arco-card canvas-card">
+                    <div class="arco-card-header">
+                        <div class="arco-card-header-title">
+                            <i class="arco-icon arco-icon-drag-dot"></i>
+                            <span>预览区域</span>
+                        </div>
+                        <div class="zoom-controls">
+                            <button id="zoomOut" class="arco-btn arco-btn-secondary arco-btn-size-small arco-btn-shape-circle">
+                                <i class="arco-icon arco-icon-minus"></i>
+                            </button>
+                            <span id="zoomLevel" class="zoom-level">100%</span>
+                            <button id="zoomIn" class="arco-btn arco-btn-secondary arco-btn-size-small arco-btn-shape-circle">
+                                <i class="arco-icon arco-icon-plus"></i>
+                            </button>
+                            <button id="resetZoom" class="arco-btn arco-btn-secondary arco-btn-size-small">
+                                <i class="arco-icon arco-icon-refresh"></i>
+                                <span>重置</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="arco-card-body">
+                        <div class="canvas-container">
+                            <canvas id="imageCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧：标注控制和列表 -->
+            <div class="right-panel">
+                <div class="arco-card input-card">
+                    <div class="arco-card-header">
+                        <div class="arco-card-header-title">
+                            <i class="arco-icon arco-icon-edit"></i>
+                            <span>添加标注</span>
+                        </div>
+                        <div class="arco-tabs-header-wrapper">
+                            <div class="arco-tabs-header">
+                                <div class="tab-btn" data-tab="manual">
+                                    <i class="arco-icon arco-icon-edit-square"></i>
+                                    <span>手动输入</span>
+                                </div>
+                                <div class="tab-btn active" data-tab="batch">
+                                    <i class="arco-icon arco-icon-paste"></i>
+                                    <span>批量输入</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="arco-card-body">
+                        <!-- 手动输入标签内容 -->
+                        <div id="manual-input" class="tab-content" style="display: none;">
+                            <div class="input-section">
+                                <div class="arco-form-item">
+                                    <div class="coord-input">
+                                        <div class="coord-group">
+                                            <label for="x">X坐标:</label>
+                                            <input type="number" id="x" class="arco-input" placeholder="X起点坐标">
+                                        </div>
+                                        <div class="coord-group">
+                                            <label for="y">Y坐标:</label>
+                                            <input type="number" id="y" class="arco-input" placeholder="Y起点坐标">
+                                        </div>
+                                        <div class="coord-group">
+                                            <label for="w">宽度:</label>
+                                            <input type="number" id="w" class="arco-input" placeholder="宽度">
+                                        </div>
+                                        <div class="coord-group">
+                                            <label for="h">高度:</label>
+                                            <input type="number" id="h" class="arco-input" placeholder="高度">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="arco-form-item">
+                                    <button id="addAnnotation" class="arco-btn arco-btn-primary">
+                                        <i class="arco-icon arco-icon-plus"></i>
+                                        <span>添加标注</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 批量输入标签内容 -->
+                        <div id="batch-input" class="tab-content">
+                            <div class="input-card">
+                                <div class="card-header">
+                                    <div class="header-title">批量输入标注</div>
+                                    <div class="header-subtitle">支持多种输入格式，包括表格和自然语言描述</div>
+                                </div>
+                                <div class="batch-instructions">
+                                    <div class="instructions-header">输入格式说明：</div>
+                                    <ol>
+                                        <li>Markdown表格格式：使用<code>|</code>分隔的表格</li>
+                                        <li>Tab分隔值格式：使用Tab键分隔的数据</li>
+                                        <li>四列Tab分隔格式：组件类型、布局(W,H)、坐标(X,Y)、对应组件</li>
+                                        <li>自然语言描述格式：按组件划分的描述文本</li>
+                                        <li><span class="ai-highlight">AI辅助解析</span>：输入任意格式的组件描述，系统会尝试智能识别</li>
+                                    </ol>
+                                </div>
+                                <div class="batch-container">
+                                    <textarea id="batchInput" placeholder="示例1（表格格式）：
+| 按钮 | (50,100,120,40) | Button |
+
+示例2（四列格式）：
+菜单栏	(800,50)	(0,0)	Menu
+
+示例3（自然语言描述）：
+导航菜单
+组件类型: Menu
+组件布局: W: 1920, H: 50
+坐标: X: 0, Y: 0
+对应ant组件: Menu
+
+示例4（AI辅助解析）：
+一个位于坐标(100,200)的搜索框，宽400像素，高40像素
+右上角导航菜单：宽度600px，高50px，位置在(1200,30)
+"></textarea>
+                                    <div class="batch-actions">
+                                        <button id="processBatch" class="arco-btn arco-btn-primary">处理批量输入</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="arco-card annotation-card">
+                    <div class="arco-card-header">
+                        <div class="arco-card-header-title">
+                            <i class="arco-icon arco-icon-tag"></i>
+                            <span>标注列表</span>
+                        </div>
+                        <div class="card-extra">
+                            <span class="annotation-badge" id="annotationCounter">0</span>
+                            <button id="exportAnnotations" class="arco-btn arco-btn-primary arco-btn-size-small">
+                                <i class="arco-icon arco-icon-download"></i>
+                                <span>导出标注</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="arco-card-body">
+                        <div class="arco-list">
+                            <div id="annotationList" class="arco-list-content">
+                                <!-- 标注项将在这里动态添加 -->
+                                <div class="arco-list-empty">
+                                    <div class="arco-empty">
+                                        <div class="arco-empty-image">
+                                            <i class="arco-icon arco-icon-tag" style="font-size: 50px; opacity: 0.2;"></i>
+                                        </div>
+                                        <div class="arco-empty-description">暂无标注数据</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="arco-radio-group arco-radio-group-button">
+                            <label class="arco-radio-button arco-radio-checked">
+                                <input type="radio" name="filter" value="all" checked>
+                                <span class="arco-radio-button-inner">全部</span>
+                            </label>
+                            <label class="arco-radio-button">
+                                <input type="radio" name="filter" value="components">
+                                <span class="arco-radio-button-inner">组件</span>
+                            </label>
+                            <label class="arco-radio-button">
+                                <input type="radio" name="filter" value="containers">
+                                <span class="arco-radio-button-inner">容器</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="app-footer">
+            <div class="copyright">© 2023 图片标注工具</div>
+        </div>
+    </div>
+    
+    <div class="arco-drawer">
+        <div class="arco-drawer-header">
+            <div class="arco-drawer-title">设置</div>
+            <button class="arco-drawer-close"></button>
+        </div>
+        <div class="arco-drawer-body">
+            <!-- 分辨率和其他设置选项 -->
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html> 
